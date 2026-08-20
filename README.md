@@ -9,7 +9,10 @@ delivery journey, including failed-delivery reschedules.
 
 - **Backend**: Node.js, TypeScript, Express, Prisma ORM
 - **Database**: PostgreSQL
-- **Frontend**: React (Vite), TypeScript, React Router
+- **Frontend**: React (Vite), TypeScript, React Router, Tailwind CSS — one
+  consistent dark glassmorphic design system across every page, for both
+  admin and customer roles (`components/ui/` holds the shared primitives:
+  `Card`, `Button`, `Input`/`Select`, `PageHeader`, `StatusBadge`)
 - **Auth**: JWT, bcrypt password hashing, role-based (`CUSTOMER` / `AGENT` / `ADMIN`)
 - **Notifications**: Email via SMTP (Nodemailer). SMS is a stubbed, swappable
   channel — see [Notifications](#notifications) below.
@@ -261,11 +264,10 @@ timeline position always shows the same numbers, rather than fabricating
 fresh random values every time.
 
 Built with `three` / `@react-three/fiber` / `@react-three/drei` +
-`framer-motion`, styled with Tailwind CSS scoped only to this component tree
-(`corePlugins.preflight: false` in `frontend/tailwind.config.js`, so the
-rest of the app's plain-CSS pages are unaffected). The route is lazy-loaded
-(`React.lazy` in `App.tsx`) since three.js adds ~1MB to the bundle — it only
-downloads for users who open a live tracking link.
+`framer-motion`, styled with the same Tailwind design system as the rest of
+the app. The route is lazy-loaded (`React.lazy` in `App.tsx`) since three.js
+adds ~1MB to the bundle — it only downloads for users who open a live
+tracking link.
 
 Known scope limits: the header's tracking-ID field requires the full order
 UUID (no backend prefix-search endpoint exists); "stops" always reads "1 of

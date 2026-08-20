@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Orbit } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { StatusBadge } from "../components/StatusBadge";
 import { Order, OrderStatus } from "../types";
+import { Card } from "../components/ui/Card";
+import { Field, Input, Select } from "../components/ui/Input";
+import { Button, buttonClasses } from "../components/ui/Button";
 
 const AGENT_NEXT_STATUS: Record<string, OrderStatus[]> = {
   ASSIGNED: ["PICKED_UP", "FAILED"],
@@ -85,108 +89,121 @@ export default function OrderDetail() {
     }
   }
 
-  if (!order) return <div className="container">Loading…</div>;
+  if (!order) {
+    return <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-zinc-400 sm:px-6">Loading…</div>;
+  }
 
   const isAssignedAgent = user?.role === "AGENT" && order.assignedAgent?.userId === user.id;
   const agentActions = isAssignedAgent ? AGENT_NEXT_STATUS[order.status] ?? [] : [];
 
   return (
-    <div className="container">
-      <div className="card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <h2 style={{ margin: 0 }}>Order {order.id.slice(0, 8)} <StatusBadge status={order.status} /></h2>
-          <Link to={`/track/${order.id}`} className="secondary" style={{ padding: "9px 16px", borderRadius: 6, border: "1px solid var(--border)", textDecoration: "none", fontSize: 14 }}>
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-zinc-50">Order {order.id.slice(0, 8)}</h2>
+            <StatusBadge status={order.status} />
+          </div>
+          <Link to={`/track/${order.id}`} className={buttonClasses("secondary")}>
+            <Orbit size={15} />
             Live 3D track
           </Link>
         </div>
-        <div className="grid-2">
+
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <p className="muted">Pickup</p>
-            <p>{order.pickupAddress} ({order.pickupArea?.pincode})</p>
+            <p className="text-xs text-zinc-500">Pickup</p>
+            <p className="text-sm text-zinc-200">{order.pickupAddress} ({order.pickupArea?.pincode})</p>
           </div>
           <div>
-            <p className="muted">Drop</p>
-            <p>{order.dropAddress} ({order.dropArea?.pincode})</p>
+            <p className="text-xs text-zinc-500">Drop</p>
+            <p className="text-sm text-zinc-200">{order.dropAddress} ({order.dropArea?.pincode})</p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500">Dimensions / weight</p>
+            <p className="text-sm text-zinc-200">
+              {order.length}×{order.breadth}×{order.height} cm, {order.actualWeight}kg actual / {order.billableWeight.toFixed(2)}kg billable
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500">Charge</p>
+            <p className="text-sm text-zinc-200">
+              ₹{order.totalCharge.toFixed(2)} ({order.orderType}, {order.paymentType}, {order.rateCategory.replace("_", " ")})
+            </p>
           </div>
         </div>
-        <div className="grid-2">
-          <div>
-            <p className="muted">Dimensions / weight</p>
-            <p>{order.length}×{order.breadth}×{order.height} cm, {order.actualWeight}kg actual / {order.billableWeight.toFixed(2)}kg billable</p>
-          </div>
-          <div>
-            <p className="muted">Charge</p>
-            <p>₹{order.totalCharge.toFixed(2)} ({order.orderType}, {order.paymentType}, {order.rateCategory.replace("_", " ")})</p>
-          </div>
-        </div>
+
         {order.assignedAgent && (
-          <p className="muted">Assigned agent: {order.assignedAgent.user?.name}</p>
+          <p className="mt-4 text-sm text-zinc-400">Assigned agent: <span className="text-zinc-200">{order.assignedAgent.user?.name}</span></p>
         )}
-        {error && <p className="error-text">{error}</p>}
-      </div>
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      </Card>
 
       {agentActions.length > 0 && (
-        <div className="card">
-          <h3>Update status</h3>
-          <div className="form-row">
-            <label>Notes (optional)</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. reason for failure" />
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
+        <Card>
+          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Update status</h3>
+          <Field label="Notes (optional)">
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. reason for failure" />
+          </Field>
+          <div className="mt-4 flex flex-wrap gap-2">
             {agentActions.map((s) => (
-              <button key={s} disabled={busy} onClick={() => setStatus(s)} className={s === "FAILED" ? "danger" : ""}>
+              <Button key={s} disabled={busy} onClick={() => setStatus(s)} variant={s === "FAILED" ? "danger" : "primary"}>
                 Mark {s.replace(/_/g, " ")}
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {user?.role === "ADMIN" && (
-        <div className="card">
-          <h3>Admin actions</h3>
+        <Card>
+          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Admin actions</h3>
           {["CREATED", "RESCHEDULED"].includes(order.status) && (
-            <div style={{ marginBottom: 12 }}>
-              <button disabled={busy} onClick={autoAssign}>Auto-assign nearest agent</button>
-            </div>
+            <Button disabled={busy} onClick={autoAssign} variant="secondary" className="mb-4">
+              Auto-assign nearest agent
+            </Button>
           )}
-          <div className="form-row">
-            <label>Override status</label>
-            <select value={overrideStatus} onChange={(e) => setOverrideStatus(e.target.value as OrderStatus)}>
-              {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Override status">
+              <Select value={overrideStatus} onChange={(e) => setOverrideStatus(e.target.value as OrderStatus)}>
+                {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </Select>
+            </Field>
+            <Field label="Notes">
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </Field>
           </div>
-          <div className="form-row">
-            <label>Notes</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-          <button disabled={busy} onClick={() => setStatus(overrideStatus)}>Apply override</button>
-        </div>
+          <Button disabled={busy} onClick={() => setStatus(overrideStatus)} className="mt-4">
+            Apply override
+          </Button>
+        </Card>
       )}
 
       {order.status === "FAILED" && (user?.role === "CUSTOMER" || user?.role === "ADMIN") && (
-        <div className="card">
-          <h3>Reschedule delivery</h3>
-          <div className="form-row">
-            <label>New delivery date</label>
-            <input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
-          </div>
-          <button disabled={busy || !rescheduleDate} onClick={reschedule}>Reschedule</button>
-        </div>
+        <Card>
+          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Reschedule delivery</h3>
+          <Field label="New delivery date">
+            <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="max-w-xs" />
+          </Field>
+          <Button disabled={busy || !rescheduleDate} onClick={reschedule} className="mt-4">
+            Reschedule
+          </Button>
+        </Card>
       )}
 
-      <div className="card">
-        <h3>Tracking timeline</h3>
-        <ul className="timeline">
+      <Card>
+        <h3 className="mb-4 text-sm font-semibold text-zinc-50">Tracking timeline</h3>
+        <ul className="list-none space-y-5">
           {order.statusHistory?.map((h) => (
-            <li key={h.id}>
-              <strong>{h.status.replace(/_/g, " ")}</strong>
-              <div className="muted">{new Date(h.createdAt).toLocaleString()} — by {h.actor?.name ?? h.actorRole}</div>
-              {h.notes && <div className="muted">{h.notes}</div>}
+            <li key={h.id} className="relative border-l-2 border-white/10 pl-5">
+              <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-electric-blue" />
+              <p className="text-sm font-medium text-zinc-100">{h.status.replace(/_/g, " ")}</p>
+              <p className="text-xs text-zinc-500">{new Date(h.createdAt).toLocaleString()} — by {h.actor?.name ?? h.actorRole}</p>
+              {h.notes && <p className="mt-0.5 text-xs text-zinc-400">{h.notes}</p>}
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }

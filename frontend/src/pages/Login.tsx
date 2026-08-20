@@ -1,6 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { Card } from "../components/ui/Card";
+import { Field, Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 
 export default function Login() {
   const { login } = useAuth();
@@ -25,25 +29,33 @@ export default function Login() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 420 }}>
-      <div className="card">
-        <h2>Log in</h2>
-        <form onSubmit={onSubmit}>
-          <div className="form-row">
-            <label>Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
-          </div>
-          <div className="form-row">
-            <label>Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
-          </div>
-          {error && <p className="error-text">{error}</p>}
-          <button type="submit" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
+    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-sm">
+        <div className="mb-6 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-electric-blue/20 text-blue-400">
+            <LogIn size={18} />
+          </span>
+          <h2 className="text-lg font-semibold text-zinc-50">Log in</h2>
+        </div>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <Field label="Email">
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+          </Field>
+          <Field label="Password">
+            <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
+          </Field>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <Button type="submit" disabled={busy} className="w-full">
+            {busy ? "Logging in…" : "Log in"}
+          </Button>
         </form>
-        <p className="muted" style={{ marginTop: 16 }}>
-          No account? <Link to="/register">Register</Link>
+        <p className="mt-5 text-center text-sm text-zinc-400">
+          No account?{" "}
+          <Link to="/register" className="font-medium text-blue-400 hover:text-blue-300">
+            Register
+          </Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

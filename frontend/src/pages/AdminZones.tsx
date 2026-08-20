@@ -1,6 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Area, Zone } from "../types";
+import { Card } from "../components/ui/Card";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Field, Input, Select } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
+import { tableClasses, tdClasses, theadClasses, thClasses, trClasses } from "../components/ui/table";
 
 export default function AdminZones() {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -51,60 +56,75 @@ export default function AdminZones() {
   }
 
   return (
-    <div className="container">
-      {error && <p className="error-text">{error}</p>}
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+      <PageHeader title="Zones" subtitle="Manage delivery zones and the pincodes assigned to them." />
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <div className="card">
-        <h2>Zones</h2>
-        <table>
-          <thead><tr><th>Name</th><th>Code</th></tr></thead>
-          <tbody>
-            {zones.map((z) => <tr key={z.id}><td>{z.name}</td><td>{z.code}</td></tr>)}
-          </tbody>
-        </table>
-        <form onSubmit={createZone} style={{ marginTop: 16 }}>
-          <div className="grid-2">
-            <div className="form-row">
-              <label>Zone name</label>
-              <input value={zoneName} onChange={(e) => setZoneName(e.target.value)} required />
-            </div>
-            <div className="form-row">
-              <label>Zone code</label>
-              <input value={zoneCode} onChange={(e) => setZoneCode(e.target.value)} required />
-            </div>
+      <Card>
+        <h2 className="mb-3 text-sm font-semibold text-zinc-50">Zones</h2>
+        <div className="overflow-x-auto rounded-xl border border-white/10">
+          <table className={tableClasses}>
+            <thead className={theadClasses}>
+              <tr><th className={thClasses}>Name</th><th className={thClasses}>Code</th></tr>
+            </thead>
+            <tbody>
+              {zones.map((z) => (
+                <tr key={z.id} className={trClasses}>
+                  <td className={tdClasses}>{z.name}</td>
+                  <td className={tdClasses}>{z.code}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <form onSubmit={createZone} className="mt-5 space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Zone name">
+              <Input value={zoneName} onChange={(e) => setZoneName(e.target.value)} required />
+            </Field>
+            <Field label="Zone code">
+              <Input value={zoneCode} onChange={(e) => setZoneCode(e.target.value)} required />
+            </Field>
           </div>
-          <button type="submit">Add zone</button>
+          <Button type="submit">Add zone</Button>
         </form>
-      </div>
+      </Card>
 
-      <div className="card">
-        <h2>Areas (pincode → zone)</h2>
-        <table>
-          <thead><tr><th>Name</th><th>Pincode</th><th>Zone</th></tr></thead>
-          <tbody>
-            {areas.map((a) => <tr key={a.id}><td>{a.name}</td><td>{a.pincode}</td><td>{a.zone?.name}</td></tr>)}
-          </tbody>
-        </table>
-        <form onSubmit={createArea} style={{ marginTop: 16 }}>
-          <div className="grid-2">
-            <div className="form-row">
-              <label>Area name</label>
-              <input value={areaName} onChange={(e) => setAreaName(e.target.value)} required />
-            </div>
-            <div className="form-row">
-              <label>Pincode</label>
-              <input value={areaPincode} onChange={(e) => setAreaPincode(e.target.value)} required />
-            </div>
+      <Card>
+        <h2 className="mb-3 text-sm font-semibold text-zinc-50">Areas (pincode → zone)</h2>
+        <div className="overflow-x-auto rounded-xl border border-white/10">
+          <table className={tableClasses}>
+            <thead className={theadClasses}>
+              <tr><th className={thClasses}>Name</th><th className={thClasses}>Pincode</th><th className={thClasses}>Zone</th></tr>
+            </thead>
+            <tbody>
+              {areas.map((a) => (
+                <tr key={a.id} className={trClasses}>
+                  <td className={tdClasses}>{a.name}</td>
+                  <td className={tdClasses}>{a.pincode}</td>
+                  <td className={tdClasses}>{a.zone?.name}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <form onSubmit={createArea} className="mt-5 space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Area name">
+              <Input value={areaName} onChange={(e) => setAreaName(e.target.value)} required />
+            </Field>
+            <Field label="Pincode">
+              <Input value={areaPincode} onChange={(e) => setAreaPincode(e.target.value)} required />
+            </Field>
           </div>
-          <div className="form-row">
-            <label>Zone</label>
-            <select value={areaZoneId} onChange={(e) => setAreaZoneId(e.target.value)}>
+          <Field label="Zone">
+            <Select value={areaZoneId} onChange={(e) => setAreaZoneId(e.target.value)}>
               {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
-            </select>
-          </div>
-          <button type="submit">Add area</button>
+            </Select>
+          </Field>
+          <Button type="submit">Add area</Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
