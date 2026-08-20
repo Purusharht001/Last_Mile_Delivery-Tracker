@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  AGENT
+  ADMIN
+}
+
+enum OrderType {
+  B2B
+  B2C
+}
+
+enum PaymentType {
+  PREPAID
+  COD
+}
+
+enum RateCategory {
+  INTRA_ZONE
+  INTER_ZONE
+}
+
+enum SurchargeType {
+  FLAT
+  PERCENTAGE
+}
+
+enum AgentStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum OrderStatus {
+  CREATED
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RESCHEDULED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  agentProfile      DeliveryAgent?
+  ordersAsCustomer  Order[]            @relation("CustomerOrders")
+  ordersCreated     Order[]            @relation("CreatedByUser")
+  statusHistory     OrderStatusHistory[]
+  rescheduleRequests RescheduleRequest[]
+  notifications     Notification[]
+}
+
+model Zone {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  areas         Area[]
+  agents        DeliveryAgent[]
+}
+
+model Area {
+  id      String @id @default(uuid())
+  name    String
+  pincode String @unique
+  zoneId  String
+  zone    Zone   @relation(fields: [zoneId], references: [id])
+
+  pickupOrders Order[] @relation("PickupArea")
+  dropOrders   Order[] @relation("DropArea")
+
+  @@index([zoneId])
+}
+
+model DeliveryAgent {
+  id          String      @id @default(uuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id])
+  homeZoneId  String
+  homeZone    Zone        @relation(fields: [homeZoneId], references: [id])
+  currentLat  Float?
+  currentLng  Float?
+  status      AgentStatus @default(AVAILABLE)
+
+  orders Order[]
+
+  @@index([homeZoneId])
+  @@index([status])
+}
+
+model RateCard {
+  id         String       @id @default(uuid())
+  orderType  OrderType
+  category   RateCategory
+  baseFare   Float
+  ratePerKg  Float
+  minCharge  Float
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([orderType, category])
+}
+
+model CodSurchargeConfig {
+  id            String        @id @default(uuid())
+  orderType     OrderType     @unique
+  surchargeType SurchargeType
+  value         Float
+  updatedAt     DateTime      @updatedAt
+}
+
+model Order {
+  id                   String      @id @default(uuid())
+  customerId           String
+  customer             User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  createdById          String
+  createdBy            User        @relation("CreatedByUser", fields: [createdById], references: [id])
+
+  pickupAddress        String
+  pickupAreaId         String
+  pickupArea           Area        @relation("PickupArea", fields: [pickupAreaId], references: [id])
+  dropAddress          String
+  dropAreaId           String
+  dropArea             Area        @relation("DropArea", fields: [dropAreaId], references: [id])
+
+  length               Float
+  breadth              Float
+  height               Float
+  actualWeight         Float
+  volumetricWeight     Float
+  billableWeight       Float
+
+  orderType            OrderType
+  paymentType          PaymentType
+
+  rateCategory         RateCategory
+  baseCharge           Float
+  codSurcharge         Float
+  totalCharge          Float
+
+  status               OrderStatus @default(CREATED)
+  assignedAgentId      String?
+  assignedAgent        DeliveryAgent? @relation(fields: [assignedAgentId], references: [id])
+
+  scheduledDeliveryDate DateTime?
+
+  createdAt            DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  statusHistory        OrderStatusHistory[]
+  rescheduleRequests   RescheduleRequest[]
+  notifications        Notification[]
+
+  @@index([status])
+  @@index([assignedAgentId])
+  @@index([pickupAreaId])
+  @@index([dropAreaId])
+}
+
+// Insert-only audit trail. The app layer never issues UPDATE/DELETE against
+// this table; migration 0002 additionally revokes those verbs at the DB role
+// level so immutability holds even if application code has a bug.
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  actorId   String
+  actor     User        @relation(fields: [actorId], references: [id])
+  actorRole Role
+  notes     String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model RescheduleRequest {
+  id                      String   @id @default(uuid())
+  orderId                 String
+  order                   Order    @relation(fields: [orderId], references: [id])
+  previousAttemptStatusId String
+  newDeliveryDate         DateTime
+  requestedById           String
+  requestedBy             User     @relation(fields: [requestedById], references: [id])
+  createdAt               DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  orderId   String
+  order     Order               @relation(fields: [orderId], references: [id])
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  channel   NotificationChannel
+  event     String
+  status    NotificationStatus
+  sentAt    DateTime            @default(now())
+
+  @@index([orderId])
+}
