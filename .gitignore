@@ -12,4 +12,5 @@ frontend/dist/
 
 chromium_cli/
 *.zip
+*.tsbuildinfo
 
