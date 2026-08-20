@@ -101,10 +101,10 @@ export default function PlaceOrder() {
 
       <Card>
         <div className="mb-5 flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-electric-blue/20 text-blue-400">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
             <PackagePlus size={18} />
           </span>
-          <h2 className="text-base font-semibold text-zinc-50">Order details</h2>
+          <h2 className="text-base font-semibold text-foreground">Order details</h2>
         </div>
 
         <form onSubmit={getQuote} className="space-y-4">
@@ -157,39 +157,39 @@ export default function PlaceOrder() {
               </Select>
             </Field>
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={busy}>{busy ? "Calculating…" : "Get quote"}</Button>
         </form>
       </Card>
 
       {quote && (
         <Card className="mt-6">
-          <h3 className="mb-4 text-base font-semibold text-zinc-50">Charge breakdown</h3>
-          <dl className="divide-y divide-white/10 text-sm">
+          <h3 className="mb-4 text-base font-semibold text-foreground">Charge breakdown</h3>
+          <dl className="divide-y divide-border text-sm">
             <div className="flex justify-between py-2">
-              <dt className="text-zinc-400">Category</dt>
-              <dd className="text-zinc-100">{quote.category.replace("_", " ")}</dd>
+              <dt className="text-muted-foreground">Category</dt>
+              <dd className="text-foreground">{quote.category.replace("_", " ")}</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-zinc-400">Volumetric weight</dt>
-              <dd className="text-zinc-100">{quote.volumetricWeight.toFixed(2)} kg</dd>
+              <dt className="text-muted-foreground">Volumetric weight</dt>
+              <dd className="text-foreground">{quote.volumetricWeight.toFixed(2)} kg</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-zinc-400">Billable weight</dt>
-              <dd className="text-zinc-100">{quote.billableWeight.toFixed(2)} kg</dd>
+              <dt className="text-muted-foreground">Billable weight</dt>
+              <dd className="text-foreground">{quote.billableWeight.toFixed(2)} kg</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-zinc-400">Base charge</dt>
-              <dd className="text-zinc-100">₹{quote.baseCharge.toFixed(2)}</dd>
+              <dt className="text-muted-foreground">Base charge</dt>
+              <dd className="text-foreground">₹{quote.baseCharge.toFixed(2)}</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-zinc-400">COD surcharge</dt>
-              <dd className="text-zinc-100">₹{quote.codSurcharge.toFixed(2)}</dd>
+              <dt className="text-muted-foreground">COD surcharge</dt>
+              <dd className="text-foreground">₹{quote.codSurcharge.toFixed(2)}</dd>
             </div>
           </dl>
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-electric-blue/10 px-4 py-3">
-            <span className="text-sm font-medium text-blue-200">Total charge</span>
-            <span className="text-2xl font-bold text-blue-100">₹{quote.totalCharge.toFixed(2)}</span>
+          <div className="mt-3 flex items-center justify-between rounded-lg bg-primary/10 px-4 py-3">
+            <span className="text-sm font-medium text-primary">Total charge</span>
+            <span className="text-2xl font-bold text-foreground">₹{quote.totalCharge.toFixed(2)}</span>
           </div>
           <Button onClick={confirmOrder} disabled={busy} className="mt-5 w-full">
             {busy ? "Placing…" : "Confirm & place order"}

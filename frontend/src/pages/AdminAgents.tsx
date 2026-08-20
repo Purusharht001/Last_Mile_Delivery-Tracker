@@ -11,7 +11,7 @@ import { tableClasses, tdClasses, theadClasses, thClasses, trClasses } from "../
 const AGENT_STATUS_CLASSES: Record<AgentStatus, string> = {
   AVAILABLE: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
   BUSY: "bg-amber-500/15 text-amber-300 border-amber-400/30",
-  OFFLINE: "bg-zinc-500/15 text-zinc-400 border-zinc-400/30",
+  OFFLINE: "bg-zinc-500/15 text-muted-foreground border-zinc-400/30",
 };
 
 export default function AdminAgents() {
@@ -52,10 +52,10 @@ export default function AdminAgents() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
       <PageHeader title="Delivery agents" subtitle="Manage agent availability and home zones." />
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Card>
-        <div className="overflow-x-auto rounded-xl border border-white/10">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr><th className={thClasses}>Name</th><th className={thClasses}>Home zone</th><th className={thClasses}>Status</th><th className={thClasses}></th></tr>
@@ -63,7 +63,7 @@ export default function AdminAgents() {
             <tbody>
               {agents.map((a) => (
                 <tr key={a.id} className={trClasses}>
-                  <td className={tdClasses}>{a.user?.name} <span className="text-zinc-500">({a.user?.email})</span></td>
+                  <td className={tdClasses}>{a.user?.name} <span className="text-muted-foreground">({a.user?.email})</span></td>
                   <td className={tdClasses}>{a.homeZone?.name}</td>
                   <td className={tdClasses}>
                     <span className={cn("inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium", AGENT_STATUS_CLASSES[a.status])}>
@@ -84,7 +84,7 @@ export default function AdminAgents() {
         </div>
 
         <form onSubmit={createAgent} className="mt-6 space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-50">Add agent</h3>
+          <h3 className="text-sm font-semibold text-foreground">Add agent</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Name">
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

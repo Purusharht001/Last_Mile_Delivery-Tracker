@@ -85,9 +85,9 @@ export default function AdminOrders() {
             </Select>
           </Field>
         </div>
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-        <div className="mt-5 overflow-x-auto rounded-xl border border-white/10">
+        <div className="mt-5 overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr>
@@ -109,7 +109,7 @@ export default function AdminOrders() {
                   <td className={tdClasses}>₹{o.totalCharge.toFixed(2)}</td>
                   <td className={tdClasses}>
                     <div className="flex items-center gap-3">
-                      <Link to={`/orders/${o.id}`} className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300">
+                      <Link to={`/orders/${o.id}`} className="inline-flex items-center gap-1 text-primary hover:underline">
                         View <ArrowRight size={14} />
                       </Link>
                       {["CREATED", "RESCHEDULED"].includes(o.status) && (

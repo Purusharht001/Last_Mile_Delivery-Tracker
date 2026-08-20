@@ -58,11 +58,11 @@ export default function AdminZones() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
       <PageHeader title="Zones" subtitle="Manage delivery zones and the pincodes assigned to them." />
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-50">Zones</h2>
-        <div className="overflow-x-auto rounded-xl border border-white/10">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Zones</h2>
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr><th className={thClasses}>Name</th><th className={thClasses}>Code</th></tr>
@@ -91,8 +91,8 @@ export default function AdminZones() {
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-50">Areas (pincode → zone)</h2>
-        <div className="overflow-x-auto rounded-xl border border-white/10">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Areas (pincode → zone)</h2>
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr><th className={thClasses}>Name</th><th className={thClasses}>Pincode</th><th className={thClasses}>Zone</th></tr>

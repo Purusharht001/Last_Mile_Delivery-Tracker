@@ -6,21 +6,21 @@ import { buttonClasses } from "../ui/Button";
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return cn(
-    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-    isActive ? "bg-electric-blue/15 text-blue-300" : "text-zinc-400 hover:bg-white/10 hover:text-zinc-100",
+    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
   );
 }
 
 function Topbar() {
   const { user, logout } = useAuth();
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <NavLink to="/" className="flex items-center gap-2 text-sm font-semibold text-zinc-50">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-electric-blue/20 text-blue-400">
+        <NavLink to="/" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
             <Package size={16} />
           </span>
-          Last-Mile <span className="text-blue-400">Tracker</span>
+          Last-Mile <span className="text-primary">Tracker</span>
         </NavLink>
 
         <nav className="flex flex-1 flex-wrap items-center gap-1">
@@ -44,8 +44,8 @@ function Topbar() {
 
         {user ? (
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-zinc-400 sm:inline">
-              {user.name} <span className="text-zinc-600">·</span> {user.role}
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              {user.name} <span className="text-border">·</span> {user.role}
             </span>
             <button onClick={logout} className={buttonClasses("secondary", "!px-3 !py-1.5")}>
               <LogOut size={14} />
@@ -67,7 +67,7 @@ function Topbar() {
  * tracking route deliberately renders outside this layout (see App.tsx). */
 export function StandardLayout() {
   return (
-    <div className="min-h-screen bg-void text-zinc-100">
+    <div className="min-h-screen bg-background text-foreground">
       <Topbar />
       <Outlet />
     </div>

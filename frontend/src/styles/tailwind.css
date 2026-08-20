@@ -1,3 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Design tokens (shadcn/ui-style). Stored as bare oklch components (no
+ * oklch(...) wrapper) so tailwind.config.js can layer in an alpha channel
+ * via oklch(var(--x) / <alpha-value>) — that's what makes utilities like
+ * bg-card/50 or border-border/20 work. This app is dark-only (no theme
+ * toggle), so there's a single :root palette rather than a paired
+ * light/.dark set.
+ */
+:root {
+  --background: 0.1149 0 0;
+  --foreground: 0.9851 0 0;
+  --card: 0.1448 0 0;
+  --card-foreground: 0.9851 0 0;
+  --primary: 0.6497 0.1195 264.3295;
+  --primary-foreground: 0.1448 0 0;
+  --secondary: 0.2046 0 0;
+  --secondary-foreground: 0.9851 0 0;
+  --muted: 0.2686 0 0;
+  --muted-foreground: 0.7090 0 0;
+  --accent: 0.3715 0 0;
+  --accent-foreground: 0.9851 0 0;
+  --destructive: 0.6496 0.1202 12.3014;
+  --destructive-foreground: 0.9851 0 0;
+  --border: 0.2768 0 0;
+  --input: 0.1822 0 0;
+  --ring: 0.6497 0.1195 264.3295;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  /*
+   * Plain CSS rather than @apply throughout this block: @apply-ing any
+   * utility built from these <alpha-value> custom color tokens hits a
+   * Tailwind v3 JIT bug in this dev setup ("class does not exist") that
+   * breaks the whole CSS build — happened with border-border, then again
+   * with bg-background once that was removed. Regular classNames in JSX
+   * (bg-background, text-foreground, etc.) are unaffected; only @apply
+   * inside this stylesheet is the problem.
+   */
+  * {
+    border-color: oklch(var(--border));
+    outline-color: oklch(var(--ring) / 0.5);
+  }
+  body {
+    background-color: oklch(var(--background));
+    color: oklch(var(--foreground));
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+}

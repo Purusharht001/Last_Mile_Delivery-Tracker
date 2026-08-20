@@ -90,7 +90,7 @@ export default function OrderDetail() {
   }
 
   if (!order) {
-    return <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-zinc-400 sm:px-6">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-muted-foreground sm:px-6">Loading…</div>;
   }
 
   const isAssignedAgent = user?.role === "AGENT" && order.assignedAgent?.userId === user.id;
@@ -101,7 +101,7 @@ export default function OrderDetail() {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-zinc-50">Order {order.id.slice(0, 8)}</h2>
+            <h2 className="text-lg font-semibold text-foreground">Order {order.id.slice(0, 8)}</h2>
             <StatusBadge status={order.status} />
           </div>
           <Link to={`/track/${order.id}`} className={buttonClasses("secondary")}>
@@ -112,36 +112,36 @@ export default function OrderDetail() {
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-xs text-zinc-500">Pickup</p>
-            <p className="text-sm text-zinc-200">{order.pickupAddress} ({order.pickupArea?.pincode})</p>
+            <p className="text-xs text-muted-foreground">Pickup</p>
+            <p className="text-sm text-foreground">{order.pickupAddress} ({order.pickupArea?.pincode})</p>
           </div>
           <div>
-            <p className="text-xs text-zinc-500">Drop</p>
-            <p className="text-sm text-zinc-200">{order.dropAddress} ({order.dropArea?.pincode})</p>
+            <p className="text-xs text-muted-foreground">Drop</p>
+            <p className="text-sm text-foreground">{order.dropAddress} ({order.dropArea?.pincode})</p>
           </div>
           <div>
-            <p className="text-xs text-zinc-500">Dimensions / weight</p>
-            <p className="text-sm text-zinc-200">
+            <p className="text-xs text-muted-foreground">Dimensions / weight</p>
+            <p className="text-sm text-foreground">
               {order.length}×{order.breadth}×{order.height} cm, {order.actualWeight}kg actual / {order.billableWeight.toFixed(2)}kg billable
             </p>
           </div>
           <div>
-            <p className="text-xs text-zinc-500">Charge</p>
-            <p className="text-sm text-zinc-200">
+            <p className="text-xs text-muted-foreground">Charge</p>
+            <p className="text-sm text-foreground">
               ₹{order.totalCharge.toFixed(2)} ({order.orderType}, {order.paymentType}, {order.rateCategory.replace("_", " ")})
             </p>
           </div>
         </div>
 
         {order.assignedAgent && (
-          <p className="mt-4 text-sm text-zinc-400">Assigned agent: <span className="text-zinc-200">{order.assignedAgent.user?.name}</span></p>
+          <p className="mt-4 text-sm text-muted-foreground">Assigned agent: <span className="text-foreground">{order.assignedAgent.user?.name}</span></p>
         )}
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       </Card>
 
       {agentActions.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Update status</h3>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Update status</h3>
           <Field label="Notes (optional)">
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. reason for failure" />
           </Field>
@@ -157,7 +157,7 @@ export default function OrderDetail() {
 
       {user?.role === "ADMIN" && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Admin actions</h3>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Admin actions</h3>
           {["CREATED", "RESCHEDULED"].includes(order.status) && (
             <Button disabled={busy} onClick={autoAssign} variant="secondary" className="mb-4">
               Auto-assign nearest agent
@@ -181,7 +181,7 @@ export default function OrderDetail() {
 
       {order.status === "FAILED" && (user?.role === "CUSTOMER" || user?.role === "ADMIN") && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-zinc-50">Reschedule delivery</h3>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Reschedule delivery</h3>
           <Field label="New delivery date">
             <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="max-w-xs" />
           </Field>
@@ -192,14 +192,14 @@ export default function OrderDetail() {
       )}
 
       <Card>
-        <h3 className="mb-4 text-sm font-semibold text-zinc-50">Tracking timeline</h3>
+        <h3 className="mb-4 text-sm font-semibold text-foreground">Tracking timeline</h3>
         <ul className="list-none space-y-5">
           {order.statusHistory?.map((h) => (
-            <li key={h.id} className="relative border-l-2 border-white/10 pl-5">
-              <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-electric-blue" />
-              <p className="text-sm font-medium text-zinc-100">{h.status.replace(/_/g, " ")}</p>
-              <p className="text-xs text-zinc-500">{new Date(h.createdAt).toLocaleString()} — by {h.actor?.name ?? h.actorRole}</p>
-              {h.notes && <p className="mt-0.5 text-xs text-zinc-400">{h.notes}</p>}
+            <li key={h.id} className="relative border-l-2 border-border pl-5">
+              <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-primary" />
+              <p className="text-sm font-medium text-foreground">{h.status.replace(/_/g, " ")}</p>
+              <p className="text-xs text-muted-foreground">{new Date(h.createdAt).toLocaleString()} — by {h.actor?.name ?? h.actorRole}</p>
+              {h.notes && <p className="mt-0.5 text-xs text-muted-foreground">{h.notes}</p>}
             </li>
           ))}
         </ul>

@@ -59,11 +59,11 @@ export default function AdminRateCards() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
       <PageHeader title="Rate cards" subtitle="Configure B2B/B2C rates and COD surcharges — no hardcoded pricing." />
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-50">Rate cards</h2>
-        <div className="overflow-x-auto rounded-xl border border-white/10">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Rate cards</h2>
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr>
@@ -116,8 +116,8 @@ export default function AdminRateCards() {
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-50">COD surcharge</h2>
-        <div className="overflow-x-auto rounded-xl border border-white/10">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">COD surcharge</h2>
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className={tableClasses}>
             <thead className={theadClasses}>
               <tr><th className={thClasses}>Order type</th><th className={thClasses}>Type</th><th className={thClasses}>Value</th></tr>

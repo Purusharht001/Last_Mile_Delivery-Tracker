@@ -22,10 +22,10 @@ export default function MyOrders() {
 
       <Card className="p-0 sm:p-0">
         {loading ? (
-          <div className="p-8 text-center text-sm text-zinc-400">Loading…</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 p-12 text-center text-zinc-400">
-            <PackageSearch size={28} className="text-zinc-600" />
+          <div className="flex flex-col items-center gap-2 p-12 text-center text-muted-foreground">
+            <PackageSearch size={28} className="text-muted-foreground/60" />
             <p>No orders yet.</p>
           </div>
         ) : (
@@ -50,7 +50,7 @@ export default function MyOrders() {
                     <td className={tdClasses}>₹{o.totalCharge.toFixed(2)}</td>
                     <td className={tdClasses}><StatusBadge status={o.status} /></td>
                     <td className={tdClasses}>
-                      <Link to={`/orders/${o.id}`} className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300">
+                      <Link to={`/orders/${o.id}`} className="inline-flex items-center gap-1 text-primary hover:underline">
                         View <ArrowRight size={14} />
                       </Link>
                     </td>
