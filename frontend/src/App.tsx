@@ -1,6 +1,8 @@
-import { Navigate, Route, Routes, Link } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { StandardLayout } from "./components/layout/StandardLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PlaceOrder from "./pages/PlaceOrder";
@@ -11,43 +13,9 @@ import AdminRateCards from "./pages/AdminRateCards";
 import AdminAgents from "./pages/AdminAgents";
 import AdminOrders from "./pages/AdminOrders";
 
-function Topbar() {
-  const { user, logout } = useAuth();
-  return (
-    <div className="topbar">
-      <Link to="/" style={{ fontWeight: 600, textDecoration: "none" }}>Last-Mile Tracker</Link>
-      <nav>
-        {user?.role === "CUSTOMER" && (
-          <>
-            <Link to="/orders/new">Place order</Link>
-            <Link to="/orders">My orders</Link>
-          </>
-        )}
-        {user?.role === "AGENT" && <Link to="/orders">My queue</Link>}
-        {user?.role === "ADMIN" && (
-          <>
-            <Link to="/admin/orders">Orders</Link>
-            <Link to="/admin/zones">Zones</Link>
-            <Link to="/admin/rate-cards">Rate cards</Link>
-            <Link to="/admin/agents">Agents</Link>
-            <Link to="/orders/new">Place order</Link>
-          </>
-        )}
-        {user ? (
-          <>
-            <span className="muted">{user.name} ({user.role})</span>
-            <button className="secondary" onClick={logout}>Log out</button>
-          </>
-        ) : (
-          <>
-            <Link to="/login">Log in</Link>
-            <Link to="/register">Register</Link>
-          </>
-        )}
-      </nav>
-    </div>
-  );
-}
+// three.js/@react-three pull the bundle up by ~1MB — code-split so that
+// weight only loads for users who actually open the live tracking view.
+const LiveTracking = lazy(() => import("./pages/LiveTracking"));
 
 function Home() {
   const { user } = useAuth();
@@ -59,9 +27,21 @@ function Home() {
 
 export default function App() {
   return (
-    <div className="app-shell">
-      <Topbar />
-      <Routes>
+    <Routes>
+      {/* Full-screen 3D live tracking view — deliberately outside
+          StandardLayout so it isn't wrapped in the shared Topbar. */}
+      <Route
+        path="/track/:id"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-void text-zinc-400">Loading live tracking…</div>}>
+              <LiveTracking />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route element={<StandardLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -123,7 +103,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-      </Routes>
-    </div>
+      </Route>
+    </Routes>
   );
 }

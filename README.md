@@ -243,6 +243,36 @@ All routes are under `/api`. Authenticated routes require
 | PUT | `/orders/:id/status` | AGENT (own orders) or ADMIN (any order, any status — override) | `{ status, notes? }` |
 | POST | `/orders/:id/reschedule` | customer (own order) or ADMIN | `{ newDeliveryDate }` — only valid from `FAILED` |
 
+## Live 3D tracking view
+
+`/track/:id` (linked from the order detail page as "Live 3D track") is a
+full-screen WebGL delivery visualization — animated low-poly vehicle on a
+glowing route, glassmorphic HUD (ETA, distance, EV battery/speed/cargo temp,
+a scrubbable timeline, three camera modes: Drone / Chase / Destination).
+
+**This is a simulation layer, not real telemetry** — there's no GPS/IoT
+backend behind it (Area rows only carry a pincode + zone, not lat/lng).
+Position and telemetry are deterministic functions of `(order.status,
+statusHistory timestamps, current time)`, implemented in
+[`frontend/src/lib/geo-sim.ts`](frontend/src/lib/geo-sim.ts) and
+[`frontend/src/lib/delivery-progress.ts`](frontend/src/lib/delivery-progress.ts) —
+the same order always renders the same route, and scrubbing to a given
+timeline position always shows the same numbers, rather than fabricating
+fresh random values every time.
+
+Built with `three` / `@react-three/fiber` / `@react-three/drei` +
+`framer-motion`, styled with Tailwind CSS scoped only to this component tree
+(`corePlugins.preflight: false` in `frontend/tailwind.config.js`, so the
+rest of the app's plain-CSS pages are unaffected). The route is lazy-loaded
+(`React.lazy` in `App.tsx`) since three.js adds ~1MB to the bundle — it only
+downloads for users who open a live tracking link.
+
+Known scope limits: the header's tracking-ID field requires the full order
+UUID (no backend prefix-search endpoint exists); "stops" always reads "1 of
+1" since this app's order model is single-pickup/single-drop, not fabricated
+multi-stop data; `navigator.vibrate` milestone haptics have no effect on iOS
+Safari or desktop browsers.
+
 ## Deployment
 
 - **Database**: Render PostgreSQL free tier (note: free instances expire

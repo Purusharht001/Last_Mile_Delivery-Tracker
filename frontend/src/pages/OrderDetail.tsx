@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { StatusBadge } from "../components/StatusBadge";
@@ -93,7 +93,12 @@ export default function OrderDetail() {
   return (
     <div className="container">
       <div className="card">
-        <h2>Order {order.id.slice(0, 8)} <StatusBadge status={order.status} /></h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <h2 style={{ margin: 0 }}>Order {order.id.slice(0, 8)} <StatusBadge status={order.status} /></h2>
+          <Link to={`/track/${order.id}`} className="secondary" style={{ padding: "9px 16px", borderRadius: 6, border: "1px solid var(--border)", textDecoration: "none", fontSize: 14 }}>
+            Live 3D track
+          </Link>
+        </div>
         <div className="grid-2">
           <div>
             <p className="muted">Pickup</p>
