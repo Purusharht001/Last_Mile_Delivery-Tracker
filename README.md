@@ -1,4 +1,4 @@
-# Last-Mile Delivery Tracker
+﻿# Last-Mile Delivery Tracker
 
 A delivery management platform: customers and admins create orders with
 auto-calculated charges, agents are assigned intelligently (manually or
@@ -9,13 +9,13 @@ delivery journey, including failed-delivery reschedules.
 
 - **Backend**: Node.js, TypeScript, Express, Prisma ORM
 - **Database**: PostgreSQL
-- **Frontend**: React (Vite), TypeScript, React Router, Tailwind CSS — one
+- **Frontend**: React (Vite), TypeScript, React Router, Tailwind CSS â€” one
   consistent dark glassmorphic design system across every page, for both
   admin and customer roles (`components/ui/` holds the shared primitives:
   `Card`, `Button`, `Input`/`Select`, `PageHeader`, `StatusBadge`)
 - **Auth**: JWT, bcrypt password hashing, role-based (`CUSTOMER` / `AGENT` / `ADMIN`)
 - **Notifications**: Email via SMTP (Nodemailer). SMS is a stubbed, swappable
-  channel — see [Notifications](#notifications) below.
+  channel â€” see [Notifications](#notifications) below.
 
 ## Repo structure
 
@@ -38,7 +38,7 @@ docker-compose.yml             # local Postgres for development
 ### Prerequisites
 
 - Node.js 18+
-- Docker (for local Postgres) — or point `DATABASE_URL` at any Postgres 14+ instance
+- Docker (for local Postgres) â€” or point `DATABASE_URL` at any Postgres 14+ instance
 
 ### 1. Database
 
@@ -84,19 +84,19 @@ npm test                      # Jest: rate-engine.test.ts, assignment-engine.tes
 
 Implemented as a pure function in
 [`backend/src/modules/orders/rate-engine.ts`](backend/src/modules/orders/rate-engine.ts),
-with **zero hardcoded rates** — every coefficient is read from the `RateCard`
+with **zero hardcoded rates** â€” every coefficient is read from the `RateCard`
 and `CodSurchargeConfig` tables, which admins manage via the API/UI.
 
-1. **Volumetric weight** = `(length × breadth × height) / 5000`
+1. **Volumetric weight** = `(length Ã- breadth Ã- height) / 5000`
 2. **Billable weight** = `max(actualWeight, volumetricWeight)`
 3. **Category** = `INTRA_ZONE` if pickup and drop resolve to the same zone,
    else `INTER_ZONE`
 4. **Rate card lookup**: `RateCard` is looked up by the unique key
-   `(orderType, category)` — e.g. a B2B intra-zone shipment and a B2C
+   `(orderType, category)` â€” e.g. a B2B intra-zone shipment and a B2C
    inter-zone shipment hit different rows. If admin hasn't configured that
    combination, order creation fails with a 422 rather than silently
    defaulting.
-5. **Base charge** = `max(rateCard.baseFare + rateCard.ratePerKg × billableWeight, rateCard.minCharge)`
+5. **Base charge** = `max(rateCard.baseFare + rateCard.ratePerKg Ã- billableWeight, rateCard.minCharge)`
 6. **COD surcharge** (only if `paymentType = COD`): looked up from
    `CodSurchargeConfig` by `orderType`, either a flat amount or a percentage
    of the base charge.
@@ -104,12 +104,12 @@ and `CodSurchargeConfig` tables, which admins manage via the API/UI.
 
 `POST /api/orders/quote` runs this with no side effects, so the frontend
 shows the price before the customer confirms. `POST /api/orders` re-runs the
-identical function server-side at creation time — the client never supplies
+identical function server-side at creation time â€” the client never supplies
 a price directly.
 
 ## Zone detection
 
-Admin maintains `Zone` records and `Area` records (pincode → zone). At quote
+Admin maintains `Zone` records and `Area` records (pincode â†’ zone). At quote
 or order time, the pickup and drop pincodes are resolved to their `Area`,
 which carries the `zoneId` used for both the intra/inter-zone rate decision
 and (for pickup) the agent auto-assignment.
@@ -133,18 +133,18 @@ with an admin-chosen agent.
 
 ## Order status lifecycle & immutable history
 
-`CREATED → ASSIGNED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED`,
-with a `FAILED` branch that leads to `RESCHEDULED → ASSIGNED` (re-entering
+`CREATED â†’ ASSIGNED â†’ PICKED_UP â†’ IN_TRANSIT â†’ OUT_FOR_DELIVERY â†’ DELIVERED`,
+with a `FAILED` branch that leads to `RESCHEDULED â†’ ASSIGNED` (re-entering
 the pipeline for the new attempt). Agents can only move an order along the
 transitions valid from its current status; admins can override to any status
 directly.
 
-Every transition — agent-driven or admin-override — writes a row to
+Every transition â€” agent-driven or admin-override â€” writes a row to
 `OrderStatusHistory` with the status, actor, actor role, optional notes, and
 a timestamp. The application only ever `INSERT`s into this table. On top of
 that, `prisma/immutable-history.sql` installs a Postgres trigger that raises
 an exception on any `UPDATE` or `DELETE` against `OrderStatusHistory`, so the
-audit trail can't be altered even by a bug or a future migration — verified
+audit trail can't be altered even by a bug or a future migration â€” verified
 manually:
 
 ```sql
@@ -156,9 +156,9 @@ UPDATE "OrderStatusHistory" SET notes='x'; -- ERROR: append-only: UPDATE is not 
 1. Agent sets status to `FAILED` with a reason in `notes`
 2. Customer is emailed a failed-delivery notification
 3. Customer (or admin) calls `POST /api/orders/:id/reschedule` with a new
-   date → creates a `RescheduleRequest`, order moves to `RESCHEDULED`, the
+   date â†’ creates a `RescheduleRequest`, order moves to `RESCHEDULED`, the
    previous agent assignment is cleared
-4. Admin re-runs auto-assignment (or assigns manually) → order moves to
+4. Admin re-runs auto-assignment (or assigns manually) â†’ order moves to
    `ASSIGNED` again, possibly with a different agent
 5. The full history across both attempts remains visible in one timeline
 
@@ -166,12 +166,12 @@ UPDATE "OrderStatusHistory" SET notes='x'; -- ERROR: append-only: UPDATE is not 
 
 `NotificationChannel` ([`backend/src/modules/notifications/notification.channel.ts`](backend/src/modules/notifications/notification.channel.ts))
 is a small interface (`send(message): Promise<{success}>`). `EmailChannel`
-is the production implementation (SMTP via Nodemailer — works with any
+is the production implementation (SMTP via Nodemailer â€” works with any
 free-tier relay, e.g. Brevo, or a Gmail App Password for local testing). If
 no SMTP credentials are configured, it logs instead of throwing, so the rest
 of the order flow still works in local dev without email set up.
 
-`SmsChannel` implements the same interface but logs instead of sending —
+`SmsChannel` implements the same interface but logs instead of sending â€”
 reliable free-tier SMS delivery isn't available without a paid provider.
 Swapping in Twilio (or similar) means implementing `NotificationChannel`
 and wiring it into `notification.service.ts`; no call sites change.
@@ -186,7 +186,7 @@ Every status transition (including reschedule) calls
 |---|---|
 | `User` | customer / agent / admin accounts, role-based |
 | `Zone` | admin-defined delivery zones |
-| `Area` | pincode → zone mapping (zone detection) |
+| `Area` | pincode â†’ zone mapping (zone detection) |
 | `DeliveryAgent` | 1:1 with a `User` (role=AGENT); home zone, live lat/lng, availability |
 | `RateCard` | unique per `(orderType, category)`; base fare, rate/kg, minimum charge |
 | `CodSurchargeConfig` | unique per `orderType`; flat or percentage COD surcharge |
@@ -205,8 +205,8 @@ All routes are under `/api`. Authenticated routes require
 ### Auth
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/auth/register` | — | Creates a `CUSTOMER` account |
-| POST | `/auth/login` | — | Returns `{ token, user }` |
+| POST | `/auth/register` | â€” | Creates a `CUSTOMER` account |
+| POST | `/auth/login` | â€” | Returns `{ token, user }` |
 | GET | `/auth/me` | any | Current user |
 
 ### Zones & areas (admin manages, all roles can read)
@@ -237,28 +237,28 @@ All routes are under `/api`. Authenticated routes require
 ### Orders
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/orders/quote` | any | No side effects — price preview |
+| POST | `/orders/quote` | any | No side effects â€” price preview |
 | POST | `/orders` | any | Customer creates their own; admin may pass `customerId` to order on behalf of a customer |
 | GET | `/orders` | any | Role-scoped (own orders for customer/agent); admin gets `?status=&zoneId=&agentId=` filters |
 | GET | `/orders/:id` | any (owner or admin/agent) | Includes full `statusHistory` timeline |
-| PUT | `/orders/:id/assign` | ADMIN | `{ agentId }` — manual assignment |
+| PUT | `/orders/:id/assign` | ADMIN | `{ agentId }` â€” manual assignment |
 | POST | `/orders/:id/auto-assign` | ADMIN | Nearest-available-agent assignment |
-| PUT | `/orders/:id/status` | AGENT (own orders) or ADMIN (any order, any status — override) | `{ status, notes? }` |
-| POST | `/orders/:id/reschedule` | customer (own order) or ADMIN | `{ newDeliveryDate }` — only valid from `FAILED` |
+| PUT | `/orders/:id/status` | AGENT (own orders) or ADMIN (any order, any status â€” override) | `{ status, notes? }` |
+| POST | `/orders/:id/reschedule` | customer (own order) or ADMIN | `{ newDeliveryDate }` â€” only valid from `FAILED` |
 
 ## Live 3D tracking view
 
 `/track/:id` (linked from the order detail page as "Live 3D track") is a
-full-screen WebGL delivery visualization — animated low-poly vehicle on a
+full-screen WebGL delivery visualization â€” animated low-poly vehicle on a
 glowing route, glassmorphic HUD (ETA, distance, EV battery/speed/cargo temp,
 a scrubbable timeline, three camera modes: Drone / Chase / Destination).
 
-**This is a simulation layer, not real telemetry** — there's no GPS/IoT
+**This is a simulation layer, not real telemetry** â€” there's no GPS/IoT
 backend behind it (Area rows only carry a pincode + zone, not lat/lng).
 Position and telemetry are deterministic functions of `(order.status,
 statusHistory timestamps, current time)`, implemented in
 [`frontend/src/lib/geo-sim.ts`](frontend/src/lib/geo-sim.ts) and
-[`frontend/src/lib/delivery-progress.ts`](frontend/src/lib/delivery-progress.ts) —
+[`frontend/src/lib/delivery-progress.ts`](frontend/src/lib/delivery-progress.ts) â€”
 the same order always renders the same route, and scrubbing to a given
 timeline position always shows the same numbers, rather than fabricating
 fresh random values every time.
@@ -266,7 +266,7 @@ fresh random values every time.
 Built with `three` / `@react-three/fiber` / `@react-three/drei` +
 `framer-motion`, styled with the same Tailwind design system as the rest of
 the app. The route is lazy-loaded (`React.lazy` in `App.tsx`) since three.js
-adds ~1MB to the bundle — it only downloads for users who open a live
+adds ~1MB to the bundle â€” it only downloads for users who open a live
 tracking link.
 
 Known scope limits: the header's tracking-ID field requires the full order
@@ -278,12 +278,12 @@ Safari or desktop browsers.
 ## Deployment
 
 - **Database**: Render PostgreSQL free tier (note: free instances expire
-  after 90 days — Supabase's free tier is a longer-lived alternative if
+  after 90 days â€” Supabase's free tier is a longer-lived alternative if
   needed)
-- **Backend**: Render Web Service — `npm install && npm run build && npm run prisma:deploy && npm run db:harden`
+- **Backend**: Render Web Service â€” `npm install && npm run build && npm run prisma:deploy && npm run db:harden`
   as the build command, `npm start` to run; set `DATABASE_URL`, `JWT_SECRET`,
   `CORS_ORIGIN` (the Vercel URL), and SMTP env vars
-- **Frontend**: Vercel — set `VITE_API_URL` to the Render backend's `/api` URL
+- **Frontend**: Vercel â€” set `VITE_API_URL` to the Render backend's `/api` URL
 
 ## Design write-up
 
