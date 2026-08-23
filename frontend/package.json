@@ -2,6 +2,7 @@
   "name": "last-mile-tracker-frontend",
   "private": true,
   "version": "1.0.0",
+  "description": "Last-Mile Delivery Tracker - React Frontend with 3D Visualization",
   "type": "module",
   "scripts": {
     "dev": "vite",
