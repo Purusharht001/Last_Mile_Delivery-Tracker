@@ -15,7 +15,11 @@ app.use("/api", apiRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(env.port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Last-Mile Tracker API listening on port ${env.port}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(env.port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Last-Mile Tracker API listening on port ${env.port}`);
+  });
+}
+
+export default app;

@@ -1,4 +1,4 @@
-﻿# Last-Mile Delivery Tracker
+# Last-Mile Delivery Tracker
 
 A delivery management platform: customers and admins create orders with
 auto-calculated charges, agents are assigned intelligently (manually or
@@ -275,15 +275,31 @@ UUID (no backend prefix-search endpoint exists); "stops" always reads "1 of
 multi-stop data; `navigator.vibrate` milestone haptics have no effect on iOS
 Safari or desktop browsers.
 
-## Deployment
+## Deployment (100% Vercel)
 
-- **Database**: Render PostgreSQL free tier (note: free instances expire
-  after 90 days â€” Supabase's free tier is a longer-lived alternative if
-  needed)
-- **Backend**: Render Web Service â€” `npm install && npm run build && npm run prisma:deploy && npm run db:harden`
-  as the build command, `npm start` to run; set `DATABASE_URL`, `JWT_SECRET`,
-  `CORS_ORIGIN` (the Vercel URL), and SMTP env vars
-- **Frontend**: Vercel â€” set `VITE_API_URL` to the Render backend's `/api` URL
+You can deploy the entire stack on Vercel by creating **two** projects pointing to this same repository (Monorepo approach).
+
+### 1. Database (Vercel Postgres)
+- In your Vercel Dashboard, go to **Storage** and create a **Vercel Postgres** database.
+- Go to its Settings -> `.env.local` tab, and copy the `POSTGRES_URL`. (This will be your `DATABASE_URL`).
+- Since Vercel is serverless, you need to configure Prisma to use the edge/accelerate client or just run `npx prisma generate` in your build step (already handled by the backend's `package.json` assuming you run it). *Note: For standard Vercel serverless, ensure `DATABASE_URL` is appended with `?pgbouncer=true` if required by Vercel connection limits.*
+
+### 2. Backend API
+- Create a New Project in Vercel.
+- Select this repository.
+- **Root Directory**: `backend` (Important!)
+- **Framework Preset**: Other
+- **Build Command**: `npm run prisma:deploy && npm run db:harden` (Note: Vercel will auto-install dependencies first).
+- **Environment Variables**: Add your `DATABASE_URL` (from step 1), `JWT_SECRET`, `CORS_ORIGIN` (the URL of your frontend), and SMTP variables.
+- Deploy. The included `vercel.json` will automatically compile and route traffic to the Express API.
+
+### 3. Frontend
+- Create another New Project in Vercel.
+- Select the exact same repository.
+- **Root Directory**: `frontend` (Important!)
+- **Framework Preset**: Vite
+- **Environment Variables**: Add `VITE_API_URL` pointing to your new Vercel Backend URL (e.g., `https://your-backend-app.vercel.app/api`).
+- Deploy.
 
 ## Design write-up
 
