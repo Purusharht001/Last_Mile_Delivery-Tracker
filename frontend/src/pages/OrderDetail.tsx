@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Orbit } from "lucide-react";
+import { Check, Orbit, Truck, Box, Banknote, MapPin, Ruler } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { StatusBadge } from "../components/StatusBadge";
@@ -8,6 +8,7 @@ import { Order, OrderStatus } from "../types";
 import { Card } from "../components/ui/Card";
 import { Field, Input, Select } from "../components/ui/Input";
 import { Button, buttonClasses } from "../components/ui/Button";
+import { cn } from "../lib/cn";
 
 const AGENT_NEXT_STATUS: Record<string, OrderStatus[]> = {
   ASSIGNED: ["PICKED_UP", "FAILED"],
@@ -25,6 +26,15 @@ const ALL_STATUSES: OrderStatus[] = [
   "DELIVERED",
   "FAILED",
   "RESCHEDULED",
+];
+
+const PROGRESS_STEPS: OrderStatus[] = [
+  "CREATED",
+  "ASSIGNED",
+  "PICKED_UP",
+  "IN_TRANSIT",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
 ];
 
 export default function OrderDetail() {
@@ -96,10 +106,26 @@ export default function OrderDetail() {
   const isAssignedAgent = user?.role === "AGENT" && order.assignedAgent?.userId === user.id;
   const agentActions = isAssignedAgent ? AGENT_NEXT_STATUS[order.status] ?? [] : [];
 
+  // Determine current step index for the progress bar
+  // If FAILED or RESCHEDULED, we stop at whatever step it was before, or just grey out.
+  // For simplicity, we just find the highest PROGRESS_STEPS index present in history,
+  // or use the current status if it's in the steps array.
+  let currentStepIndex = PROGRESS_STEPS.indexOf(order.status);
+  if (currentStepIndex === -1) {
+    // FAILED or RESCHEDULED. Let's find the last known good step from history
+    const historyStatuses = order.statusHistory?.map(h => h.status) || [];
+    for (let i = PROGRESS_STEPS.length - 1; i >= 0; i--) {
+      if (historyStatuses.includes(PROGRESS_STEPS[i])) {
+        currentStepIndex = i;
+        break;
+      }
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
       <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-foreground">Order {order.id.slice(0, 8)}</h2>
             <StatusBadge status={order.status} />
@@ -110,26 +136,70 @@ export default function OrderDetail() {
           </Link>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Visual Progress Stepper */}
+        <div className="mb-8 hidden sm:block">
+          <div className="flex items-center justify-between relative">
+            <div className="absolute left-0 top-1/2 w-full h-0.5 bg-border -z-10 -translate-y-1/2"></div>
+            {PROGRESS_STEPS.map((step, idx) => {
+              const isCompleted = idx <= currentStepIndex;
+              const isCurrent = idx === currentStepIndex && !["FAILED", "RESCHEDULED"].includes(order.status);
+              const isFailedStep = idx === currentStepIndex && order.status === "FAILED";
+              
+              return (
+                <div key={step} className="flex flex-col items-center gap-2 relative bg-card px-2">
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors",
+                    isCurrent ? "border-primary bg-primary text-primary-foreground" :
+                    isCompleted ? "border-primary bg-primary text-primary-foreground" :
+                    "border-border bg-card text-muted-foreground"
+                  )}>
+                    {isCompleted ? <Check size={12} /> : idx + 1}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-medium absolute top-8 whitespace-nowrap",
+                    isCurrent ? "text-primary" :
+                    isCompleted ? "text-foreground" :
+                    "text-muted-foreground"
+                  )}>
+                    {step.replace(/_/g, " ")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Order Details Grid */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-6 mt-8 sm:mt-12">
           <div>
-            <p className="text-xs text-muted-foreground">Pickup</p>
-            <p className="text-sm text-foreground">{order.pickupAddress} ({order.pickupArea?.pincode})</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={12} /> Pickup</p>
+            <p className="text-sm text-foreground font-medium mt-1">{order.pickupAddress} ({order.pickupArea?.pincode})</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Drop</p>
-            <p className="text-sm text-foreground">{order.dropAddress} ({order.dropArea?.pincode})</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={12} /> Drop</p>
+            <p className="text-sm text-foreground font-medium mt-1">{order.dropAddress} ({order.dropArea?.pincode})</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Dimensions / weight</p>
-            <p className="text-sm text-foreground">
-              {order.length}×{order.breadth}×{order.height} cm, {order.actualWeight}kg actual / {order.billableWeight.toFixed(2)}kg billable
-            </p>
+        </div>
+
+        {/* Summary Stat Bar */}
+        <div className="flex flex-wrap items-center gap-3 bg-muted/20 border border-border p-3 rounded-lg">
+          <div className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border border-border shadow-sm">
+            <Ruler size={14} className="text-primary" />
+            <span className="text-xs font-medium text-foreground">
+              {order.billableWeight.toFixed(2)}kg billable
+            </span>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Charge</p>
-            <p className="text-sm text-foreground">
-              ₹{order.totalCharge.toFixed(2)} ({order.orderType}, {order.paymentType}, {order.rateCategory.replace("_", " ")})
-            </p>
+          <div className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border border-border shadow-sm">
+            <Truck size={14} className="text-emerald-500" />
+            <span className="text-xs font-medium text-foreground">
+              {order.rateCategory.replace("_", " ")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border border-border shadow-sm">
+            <Banknote size={14} className="text-amber-500" />
+            <span className="text-xs font-medium text-foreground">
+              ₹{order.totalCharge.toFixed(2)} ({order.orderType}, {order.paymentType})
+            </span>
           </div>
         </div>
 

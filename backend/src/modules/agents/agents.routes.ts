@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { AgentStatus, Role } from "@prisma/client";
+import { AgentStatus, OrderStatus, Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { asyncHandler, ApiError } from "../../middleware/error-handler";
 import { requireAuth, requireRole } from "../../middleware/auth";
@@ -75,5 +75,34 @@ agentsRouter.put(
       include: { user: true, homeZone: true },
     });
     res.json({ agent: updated });
+  }),
+);
+
+agentsRouter.delete(
+  "/:id",
+  requireAuth,
+  requireRole(Role.ADMIN),
+  asyncHandler(async (req, res) => {
+    const agent = await prisma.deliveryAgent.findUnique({ where: { id: req.params.id } });
+    if (!agent) throw new ApiError(404, "Agent not found");
+
+    const activeOrders = await prisma.order.count({
+      where: {
+        assignedAgentId: req.params.id,
+        status: { in: [OrderStatus.ASSIGNED, OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT, OrderStatus.OUT_FOR_DELIVERY] },
+      },
+    });
+    if (activeOrders > 0) {
+      throw new ApiError(409, "Cannot delete an agent with active orders. Reassign or complete them first.");
+    }
+
+    // Unlink completed orders, then delete the agent profile and its user
+    await prisma.$transaction(async (tx) => {
+      await tx.order.updateMany({ where: { assignedAgentId: req.params.id }, data: { assignedAgentId: null } });
+      await tx.deliveryAgent.delete({ where: { id: req.params.id } });
+      await tx.user.delete({ where: { id: agent.userId } });
+    });
+
+    res.json({ deleted: true });
   }),
 );

@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { StandardLayout } from "./components/layout/StandardLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -12,6 +13,7 @@ import AdminZones from "./pages/AdminZones";
 import AdminRateCards from "./pages/AdminRateCards";
 import AdminAgents from "./pages/AdminAgents";
 import AdminOrders from "./pages/AdminOrders";
+import CustomerDashboard from "./pages/CustomerDashboard";
 
 // three.js/@react-three pull the bundle up by ~1MB — code-split so that
 // weight only loads for users who actually open the live tracking view.
@@ -20,13 +22,14 @@ const LiveTracking = lazy(() => import("./pages/LiveTracking"));
 function Home() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === "CUSTOMER") return <Navigate to="/orders" replace />;
+  if (user.role === "CUSTOMER") return <Navigate to="/dashboard" replace />;
   if (user.role === "AGENT") return <Navigate to="/orders" replace />;
   return <Navigate to="/admin/orders" replace />;
 }
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <Routes>
       {/* Full-screen 3D live tracking view — deliberately outside
           StandardLayout so it isn't wrapped in the shared Topbar. */}
@@ -34,9 +37,22 @@ export default function App() {
         path="/track/:id"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-void text-zinc-400">Loading live tracking…</div>}>
-              <LiveTracking />
-            </Suspense>
+            <ErrorBoundary
+              fallback={(error, reset) => (
+                <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-void text-zinc-200">
+                  <p className="text-sm font-medium text-red-400">3D scene failed to load</p>
+                  <p className="max-w-sm text-center text-xs text-zinc-400">{error.message}</p>
+                  <div className="flex gap-3">
+                    <button onClick={reset} className="rounded-md bg-white/10 px-4 py-2 text-xs backdrop-blur hover:bg-white/20">Try again</button>
+                    <Link to="/" className="rounded-md bg-white/10 px-4 py-2 text-xs backdrop-blur hover:bg-white/20">Back home</Link>
+                  </div>
+                </div>
+              )}
+            >
+              <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-void text-zinc-400">Loading live tracking…</div>}>
+                <LiveTracking />
+              </Suspense>
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -45,6 +61,15 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute roles={["CUSTOMER"]}>
+              <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/orders/new"
@@ -105,5 +130,6 @@ export default function App() {
         />
       </Route>
     </Routes>
+    </ErrorBoundary>
   );
 }

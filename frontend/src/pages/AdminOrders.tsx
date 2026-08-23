@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
 import { DeliveryAgent, Order, OrderStatus, Zone } from "../types";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Field, Select } from "../components/ui/Input";
-import { buttonClasses } from "../components/ui/Button";
+import { Button, buttonClasses } from "../components/ui/Button";
 import { tableClasses, tdClasses, theadClasses, thClasses, trClasses } from "../components/ui/table";
 
 const STATUSES: OrderStatus[] = [
@@ -28,10 +28,13 @@ export default function AdminOrders() {
   const [status, setStatus] = useState("");
   const [zoneId, setZoneId] = useState("");
   const [agentId, setAgentId] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const params: Record<string, string> = {};
+    const params: Record<string, string | number> = { page, limit: 20 };
     if (status) params.status = status;
     if (zoneId) params.zoneId = zoneId;
     if (agentId) params.agentId = agentId;
@@ -41,14 +44,21 @@ export default function AdminOrders() {
       api.get("/agents"),
     ]);
     setOrders(o.data.orders);
+    setTotalPages(o.data.totalPages);
+    setTotal(o.data.total);
     setZones(z.data.zones);
     setAgents(a.data.agents);
   }
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [status, zoneId, agentId]);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, zoneId, agentId]);
+  }, [status, zoneId, agentId, page]);
 
   async function autoAssign(orderId: string) {
     setError(null);
@@ -124,6 +134,22 @@ export default function AdminOrders() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {total} order{total !== 1 ? "s" : ""} · page {page} of {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" className="!px-2 !py-1" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft size={16} />
+              </Button>
+              <Button variant="ghost" className="!px-2 !py-1" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

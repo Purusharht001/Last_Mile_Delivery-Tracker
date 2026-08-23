@@ -68,6 +68,8 @@ const listQuerySchema = z.object({
   status: z.nativeEnum(OrderStatus).optional(),
   zoneId: z.string().uuid().optional(),
   agentId: z.string().uuid().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
 });
 
 orderRouter.get(
@@ -75,8 +77,8 @@ orderRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const filters = listQuerySchema.parse(req.query);
-    const orders = await orderService.listOrders(req.user!.role, req.user!.sub, filters);
-    res.json({ orders });
+    const result = await orderService.listOrders(req.user!.role, req.user!.sub, filters);
+    res.json(result);
   }),
 );
 
@@ -171,7 +173,7 @@ orderRouter.post(
         throw new ApiError(403, "Not your order");
       }
     }
-    const order = await orderService.rescheduleOrder(req.params.id, body.newDeliveryDate, req.user!.sub);
+    const order = await orderService.rescheduleOrder(req.params.id, body.newDeliveryDate, req.user!.sub, req.user!.role);
     res.json({ order });
   }),
 );

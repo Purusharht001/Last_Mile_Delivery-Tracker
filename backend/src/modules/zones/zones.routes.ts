@@ -81,3 +81,27 @@ zonesRouter.put(
     res.json({ area });
   }),
 );
+
+zonesRouter.delete(
+  "/:id",
+  requireAuth,
+  requireRole(Role.ADMIN),
+  asyncHandler(async (req, res) => {
+    const areaCount = await prisma.area.count({ where: { zoneId: req.params.id } });
+    if (areaCount > 0) {
+      throw new ApiError(409, "Cannot delete a zone that still has areas. Remove its areas first.");
+    }
+    await prisma.zone.delete({ where: { id: req.params.id } });
+    res.json({ deleted: true });
+  }),
+);
+
+zonesRouter.delete(
+  "/areas/:id",
+  requireAuth,
+  requireRole(Role.ADMIN),
+  asyncHandler(async (req, res) => {
+    await prisma.area.delete({ where: { id: req.params.id } });
+    res.json({ deleted: true });
+  }),
+);

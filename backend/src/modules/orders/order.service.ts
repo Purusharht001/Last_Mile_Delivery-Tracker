@@ -143,9 +143,19 @@ export interface OrderFilters {
   status?: OrderStatus;
   zoneId?: string;
   agentId?: string;
+  page?: number;
+  limit?: number;
 }
 
-export async function listOrders(role: Role, userId: string, filters: OrderFilters) {
+export interface PaginatedOrders {
+  orders: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function listOrders(role: Role, userId: string, filters: OrderFilters): Promise<PaginatedOrders> {
   const where: Record<string, unknown> = {};
 
   if (role === Role.CUSTOMER) {
@@ -159,20 +169,32 @@ export async function listOrders(role: Role, userId: string, filters: OrderFilte
   if (filters.status) where.status = filters.status;
   if (filters.agentId) where.assignedAgentId = filters.agentId;
 
-  const orders = await prisma.order.findMany({
-    where: filters.zoneId
-      ? {
-          ...where,
-          OR: [
-            { pickupArea: { zoneId: filters.zoneId } },
-            { dropArea: { zoneId: filters.zoneId } },
-          ],
-        }
-      : where,
-    include: { pickupArea: { include: { zone: true } }, dropArea: { include: { zone: true } }, assignedAgent: { include: { user: true } } },
-    orderBy: { createdAt: "desc" },
-  });
-  return orders;
+  const fullWhere = filters.zoneId
+    ? {
+        ...where,
+        OR: [
+          { pickupArea: { zoneId: filters.zoneId } },
+          { dropArea: { zoneId: filters.zoneId } },
+        ],
+      }
+    : where;
+
+  const page = Math.max(filters.page ?? 1, 1);
+  const limit = Math.min(Math.max(filters.limit ?? 20, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where: fullWhere,
+      include: { pickupArea: { include: { zone: true } }, dropArea: { include: { zone: true } }, assignedAgent: { include: { user: true } } },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count({ where: fullWhere }),
+  ]);
+
+  return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function getOrderWithTimeline(orderId: string) {
@@ -299,6 +321,7 @@ export async function rescheduleOrder(
   orderId: string,
   newDeliveryDate: Date,
   actorId: string,
+  actorRole: Role,
 ) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -329,7 +352,7 @@ export async function rescheduleOrder(
         orderId,
         status: OrderStatus.RESCHEDULED,
         actorId,
-        actorRole: Role.CUSTOMER,
+        actorRole,
         notes: `Rescheduled for ${newDeliveryDate.toISOString()}`,
       },
     });

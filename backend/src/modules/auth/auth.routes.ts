@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import rateLimit from "express-rate-limit";
 import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { env } from "../../config/env";
@@ -9,6 +10,20 @@ import { ApiError, asyncHandler } from "../../middleware/error-handler";
 import { requireAuth } from "../../middleware/auth";
 
 export const authRouter = Router();
+
+// 10 login/register attempts per 15 minutes per IP — mitigates brute-force
+// and credential-stuffing attacks without impacting normal usage.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+});
+
+authRouter.use("/login", authLimiter);
+authRouter.use("/register", authLimiter);
+
 
 const registerSchema = z.object({
   name: z.string().min(1),
