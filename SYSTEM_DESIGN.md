@@ -1,81 +1,30 @@
-﻿# System Design â€” Last-Mile Delivery Tracker
+# System Design
 
-## Rate calculation engine
+## How Pricing Works
 
-The engine lives in `rate-engine.ts` as a pure function with no database
-access and no side effects: `(input, rateCard, codConfig) â†’ breakdown`. Every
-coefficient it uses â€” base fare, rate per kg, minimum charge, COD surcharge
-type and value â€” is a parameter, sourced from the `RateCard` and
-`CodSurchargeConfig` tables that admins manage through the API. Nothing is
-hardcoded; changing a price is a data update, not a deploy.
+You'll find the core pricing logic inside `rate-engine.ts`. I designed it to be completely standalone, so it doesn't talk directly to the database. Instead, you just pass it the inputs, and it calculates the final cost. Every single number it uses - like the base fare, per kg rate, minimums, and COD fees - is pulled from the admin-controlled rate cards. This means admins can change prices on the fly without needing a code deployment, and absolutely nothing is hardcoded.
 
-The calculation follows the spec directly: volumetric weight is
-`(LÃ-BÃ-H)/5000`; billable weight is the greater of actual and volumetric
-weight, so oversized-but-light packages are billed fairly; the rate category
-is `INTRA_ZONE` when pickup and drop resolve to the same zone and
-`INTER_ZONE` otherwise; the matching `RateCard` is looked up by the unique
-key `(orderType, category)` â€” four rows cover B2B/B2C Ã- intra/inter, per the
-spec's wording, rather than a combinatorial zone-pair table that isn't asked
-for. Base charge is `max(baseFare + ratePerKgÃ-billableWeight, minCharge)`,
-so light packages never fall below a floor. COD orders add a surcharge â€” flat
-or percentage-of-base, admin's choice â€” computed off the base charge, not
-the total, so surcharge logic doesn't compound with itself.
+The math follows the requirements closely. First, we figure out the volumetric weight using `(L x B x H)/5000`. Then, we compare that to the actual weight and bill the customer for whichever is higher, which keeps things fair for large but light packages. 
+If the pickup and drop-off locations are in the exact same zone, it gets tagged as `INTRA_ZONE`. Otherwise, it's `INTER_ZONE`. We use this category plus the order type (B2B or B2C) to find the right rate card. I chose this approach over a massive table mapping every zone to every other zone because it's much simpler to manage.
+The base charge uses a minimum floor to ensure we don't lose money on tiny packages. If it's a COD order, we add the surcharge right at the end based on the base charge. 
 
-Because the function is pure, it's unit-tested directly with no database or
-HTTP mocking (20 cases covering both weight-billing directions, the minimum
-charge floor, and each surcharge type). It's also reused twice: once behind
-`POST /orders/quote`, which runs the full calculation with zero persistence
-so the frontend can show a price before the customer commits, and again
-inside `POST /orders` at creation time. The server always recomputes the
-price from current rate cards; the client never gets to supply one. This
-closes an obvious integrity gap â€” a customer confirming a quote and a stale
-or tampered price reaching the database are structurally the same bug if the
-client is trusted, so it isn't.
+Because the code doesn't rely on the database, I was able to write a bunch of unit tests for it pretty easily. The app uses this exact same function in two places: once when you get a quote on the frontend, and again when the order is actually saved. By re-calculating it on the server during creation, we make sure nobody can tamper with the price on the frontend.
 
-## Zone detection
+## Zone Mapping
 
-Zones are admin-defined regions; `Area` rows map individual pincodes to a
-zone. This is deliberately a flat lookup table rather than geocoding or
-polygon math â€” it matches how logistics rate cards are actually built (by
-serviceable pincode), it's trivial for admins to manage and audit, and it
-makes zone detection an O(1) unique-key lookup with no external geocoding
-dependency or failure mode. Both quote and order creation resolve pickup and
-drop pincodes to their `Area`/`Zone` up front; the resolved zone IDs drive
-both the rate category decision and, for pickup, the auto-assignment zone
-preference. An address with no matching `Area` fails the quote with a 422
-rather than guessing a zone â€” a wrong zone silently produces a wrong price,
-which is worse than an explicit "admin hasn't configured this pincode yet."
+Zones are just regions that the admin sets up. We link specific pincodes to these zones using an `Area` table. I went with a simple database lookup for this instead of dealing with complex GPS polygons or third-party geocoding APIs. It's how a lot of real logistics companies do it, and it makes finding a zone super fast. 
+When someone tries to place an order, we check their pickup and drop pincodes right away. If a pincode isn't mapped to a zone yet, the system blocks the order and tells them, rather than guessing and charging the wrong amount.
 
-## Auto-assignment logic
+## Finding the Right Agent
 
-Agent availability is modeled explicitly: `DeliveryAgent.status` is
-`AVAILABLE`/`BUSY`/`OFFLINE`, set by the agent or admin, independent of order
-state â€” an agent isn't implicitly "busy" just because they have one active
-delivery, since real agents often carry several. The assignment engine
-(`assignment-engine.ts`, also a pure function over a candidate list) filters
-to `AVAILABLE` agents, prefers ones whose home zone matches the pickup zone,
-and within that pool ranks by Haversine distance when both agent and pickup
-coordinates are known, falling back to zone match alone otherwise since exact
-GPS isn't always available. Ties break on each agent's current count of
-non-terminal orders, so load balances across a zone's agents rather than
-piling onto whoever ranks first. If no agent is available, the order stays
-unassigned and visible to admin instead of raising an error that would abort
-order creation â€” placing an order and finding an agent are separate
-concerns, and a temporary agent shortage shouldn't block the former.
+We track whether an agent is `AVAILABLE`, `BUSY`, or `OFFLINE`. This is a manual toggle because a delivery driver might be carrying three packages at once but still be available to pick up a fourth.
 
-## Failed delivery handling
+The assignment logic lives in `assignment-engine.ts`. When an order needs a driver, the code first looks for anyone who is `AVAILABLE`. Then, it tries to prioritize agents whose "home zone" matches the pickup location. If we have exact GPS coordinates, it sorts them by who is physically closest. 
+If there's a tie, it gives the order to whoever currently has the fewest active deliveries so that one person doesn't get swamped. If literally no one is available, the order just stays in the queue. I didn't want the whole checkout process to crash just because drivers are busy, so the admin can just assign someone later.
 
-`FAILED` is a first-class status, not an error path bolted onto the state
-machine. Reaching it via `PUT /orders/:id/status` fires the same notification
-hook as every other transition, so the customer is emailed automatically.
-Reschedule is a distinct, explicit action (`POST /orders/:id/reschedule`)
-rather than a status the agent sets directly, because it captures data the
-agent doesn't have â€” the customer's new preferred date â€” and because keeping
-it customer/admin-initiated matches who actually decides when redelivery
-happens. It records a `RescheduleRequest` linked to the specific failed
-attempt, clears the stale agent assignment, and moves the order to
-`RESCHEDULED`, from which the same auto/manual assignment path used for new
-orders re-runs â€” the second attempt isn't special-cased logic, it's the
-existing pipeline re-entered. Every attempt's history stays in one ordered,
-append-only timeline, so support or the customer can see the full story:
-first agent, failure reason, reschedule date, second agent, final outcome.
+## Handling Failed Deliveries
+
+Sometimes deliveries fail, so `FAILED` is an actual status in the system, just like `DELIVERED`. When a driver marks a package as failed, the system sends out an email to the customer letting them know.
+
+From there, the customer (or the admin) can pick a new date to try again. I made this a separate reschedule action instead of just letting the driver guess a new date, since the customer is the one who knows when they'll be home. 
+When they reschedule, the old driver is removed, the order goes into a `RESCHEDULED` state, and it basically goes back into the pool to get assigned to someone else. The cool part is that the history timeline tracks everything. You can look at an order and see exactly what happened on the first attempt, why it failed, and who handled the second attempt.
