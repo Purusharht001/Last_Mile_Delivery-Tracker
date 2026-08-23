@@ -1,7 +1,5 @@
 # Last-Mile Delivery Tracker
 
-A full-stack delivery management platform that lets customers place orders and calculates their shipping charges automatically. It also includes an admin dashboard for managing delivery zones and pricing, plus an app for delivery agents to update statuses on the go.
-
 > **Note:** This project is fully deployable. To get it running you will need to set up your own PostgreSQL database, configure your own SMTP email credentials, and provide your own admin account details and JWT secret. Everything is driven by environment variables — see the detailed setup guide below.
 
 ## What I used to build it
